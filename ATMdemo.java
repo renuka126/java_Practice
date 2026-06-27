@@ -1,10 +1,12 @@
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 public class ATMdemo {
     public static void main(String[] args) {
         Scanner sc = new Scanner(System.in);
         Bank bank = new Bank();
-        ATMOperations atmOps = new ATMOperations();
+        ATMOperations atmOps = new ATMOperations(sc);
 
         while (true) {
             System.out.println("\n==== ATM welcomes you! ====");
@@ -20,7 +22,7 @@ public class ATMdemo {
                 System.out.print("Enter PIN: ");
                 String pin = sc.next();
 
-                User user = bank.getUser(userId); 
+                User user = bank.getUser(userId);
 
                 if (user != null && user.validate(pin)) {
                     System.out.println("Login Successful!");
@@ -56,15 +58,16 @@ public class ATMdemo {
 class Transaction {
     String type;
     double amount;
-    Date date;
+    String date;
+
     Transaction(String type, double amount) {
         this.type = type;
         this.amount = amount;
-        this.date = new Date();
+        this.date = LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss"));
     }
 
     public String toString() {
-        return date + " - " + type + " : " + amount;
+        return date + " - " + type + " : Rs." + String.format("%.2f", amount);
     }
 }
 
@@ -102,12 +105,16 @@ class Bank {
 }
 
 class ATMOperations {
-    Scanner sc = new Scanner(System.in);
+    Scanner sc;
+
+    ATMOperations(Scanner sc) {
+        this.sc = sc;
+    }
 
     void showMenu(User user, Bank bank) {
         while (true) {
             System.out.println("\n==== ATM Menu ====");
-            System.out.println("1. Transactions History");
+            System.out.println("1. Transaction History");
             System.out.println("2. Withdraw");
             System.out.println("3. Deposit");
             System.out.println("4. Transfer");
@@ -130,7 +137,7 @@ class ATMOperations {
                     transfer(user, bank);
                     break;
                 case 5:
-                    System.out.println("Your balance: " + user.balance);
+                    System.out.println("Your balance: Rs." + String.format("%.2f", user.balance));
                     break;
                 case 6:
                     System.out.println("Thank you for using ATM!");
@@ -145,6 +152,7 @@ class ATMOperations {
         if (user.history.isEmpty()) {
             System.out.println("No transactions yet.");
         } else {
+            System.out.println("\n--- Transaction History ---");
             for (Transaction t : user.history) {
                 System.out.println(t);
             }
@@ -154,10 +162,14 @@ class ATMOperations {
     void withdraw(User user) {
         System.out.print("Enter amount to withdraw: ");
         double amt = sc.nextDouble();
+        if (amt <= 0) {
+            System.out.println("Amount must be greater than zero!");
+            return;
+        }
         if (amt <= user.balance) {
             user.balance -= amt;
             user.history.add(new Transaction("Withdraw", amt));
-            System.out.println("Withdrawal successful. New balance: " + user.balance);
+            System.out.println("Withdrawal successful. New balance: Rs." + String.format("%.2f", user.balance));
         } else {
             System.out.println("Insufficient balance!");
         }
@@ -166,16 +178,25 @@ class ATMOperations {
     void deposit(User user) {
         System.out.print("Enter amount to deposit: ");
         double amt = sc.nextDouble();
+        if (amt <= 0) {
+            System.out.println("Amount must be greater than zero!");
+            return;
+        }
         user.balance += amt;
         user.history.add(new Transaction("Deposit", amt));
-        System.out.println("Deposit successful. New balance: " + user.balance);
+        System.out.println("Deposit successful. New balance: Rs." + String.format("%.2f", user.balance));
     }
 
     void transfer(User user, Bank bank) {
-        System.out.print("Enter recipient userId: ");
+        System.out.print("Enter recipient User ID: ");
         String receiverId = sc.next();
-        User receiver = bank.getUser(receiverId);
 
+        if (receiverId.equals(user.userId)) {
+            System.out.println("Cannot transfer to your own account!");
+            return;
+        }
+
+        User receiver = bank.getUser(receiverId);
         if (receiver == null) {
             System.out.println("Receiver not found!");
             return;
@@ -183,13 +204,17 @@ class ATMOperations {
 
         System.out.print("Enter amount to transfer: ");
         double amt = sc.nextDouble();
+        if (amt <= 0) {
+            System.out.println("Amount must be greater than zero!");
+            return;
+        }
 
         if (amt <= user.balance) {
             user.balance -= amt;
             receiver.balance += amt;
             user.history.add(new Transaction("Transfer to " + receiverId, amt));
             receiver.history.add(new Transaction("Transfer from " + user.userId, amt));
-            System.out.println("Transfer successful. New balance: " + user.balance);
+            System.out.println("Transfer successful. New balance: Rs." + String.format("%.2f", user.balance));
         } else {
             System.out.println("Insufficient balance!");
         }
