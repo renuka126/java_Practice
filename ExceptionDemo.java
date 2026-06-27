@@ -1,5 +1,6 @@
 public class ExceptionDemo {
     public static void main(String[] args) {
+
         try {
             int[] arr = new int[5];
             arr[10] = 50;  // This will throw ArrayIndexOutOfBoundsException
@@ -9,6 +10,7 @@ public class ExceptionDemo {
             System.out.println("Finally block executed.");
         }
         System.out.println("Program continues...");
+        
     }
 }
 
